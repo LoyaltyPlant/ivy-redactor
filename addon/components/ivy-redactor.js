@@ -71,13 +71,17 @@ export default Ember.Component.extend({
    * @method changeCallback
    * @param {String} html
    */
-  changeCallback(html) {
+  changeCallback: function(html) {
     this.set('value', html);
   },
 
-  didInsertElement() {
-    this._super(...arguments);
+  _destroyRedactor: Ember.on('willDestroyElement', function() {
+    this.removeObserver('value', this, this._valueDidChange);
 
+    this.$().redactor('core.destroy');
+  }),
+
+  _initRedactor: Ember.on('didInsertElement', function() {
     var options = {};
 
     this._setupRedactorCallbacks(options);
@@ -87,23 +91,15 @@ export default Ember.Component.extend({
 
     this.addObserver('value', this, this._valueDidChange);
     this._valueDidChange();
-  },
+  }),
 
-  willDestroyElement() {
-    this._super(...arguments);
-
-    this.removeObserver('value', this, this._valueDidChange);
-
-    this.$().redactor('core.destroy');
-  },
-
-  _setupRedactorCallbacks(options) {
+  _setupRedactorCallbacks: function(options) {
     this.get('redactorCallbacks').forEach(function(name) {
       options[name] = Ember.run.bind(this, name);
     }, this);
   },
 
-  _setupRedactorSettings(options) {
+  _setupRedactorSettings: function(options) {
     this.get('redactorSettings').forEach(function(key) {
       if (key in this) {
         options[key] = this.get(key);
@@ -116,7 +112,7 @@ export default Ember.Component.extend({
     options.tabifier = false;
   },
 
-  _updateRedactorCode() {
+  _updateRedactorCode: function() {
     var value = this.get('value');
     var $elem = this.$();
 
@@ -125,7 +121,7 @@ export default Ember.Component.extend({
     }
   },
 
-  _valueDidChange() {
+  _valueDidChange: function() {
     Ember.run.scheduleOnce('afterRender', this, this._updateRedactorCode);
   }
 });
